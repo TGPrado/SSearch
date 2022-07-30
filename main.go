@@ -1,23 +1,25 @@
 package main
 
 import (
-    "fmt"
-    "flag"
-    "os"
-    "bufio"
-    "net/http"
-    "time"
+	"bufio"
+	"flag"
+	"fmt"
+	"net/http"
+	"os"
+	"time"
+
 )
 
 var colors = map[int]string{
     20: "\u001b[32m",
     30: "\u001b[32m",
     40: "\u001b[31m",
+    50: "\u001b[31m",
 }
 
 type data struct {
     statusCode int
-        url        string
+    url        string
 }
 
 func generateEndpoints(paths []string) []string{
@@ -49,12 +51,22 @@ func waitForServer(url string) int{
         }
         time.Sleep(time.Second << uint(tries))
     }
-    return 0
+    return 500
 }
 
-func printText(url string, statusCode int){
+func printText(url string, statusCode int, vFlag bool){
+
     decimalStatusCode := statusCode/10
+
+    if (!vFlag && decimalStatusCode == 20){
+        fmt.Println(url, " ",colors[decimalStatusCode], statusCode, "\u001b[0m")
+        return
+    }
+    if (!vFlag){
+        return
+    }
     fmt.Println(url, " ",colors[decimalStatusCode], statusCode, "\u001b[0m")
+    
 }
 
 
@@ -74,13 +86,17 @@ func main(){
                   }     
 
     gFlag := flag.Bool("g", false, "only generate swagger endpoints")
+    vFlag := flag.Bool("v", false, "print all status codes")
+    tFlag := flag.Int("t", 10,     "number of threads, default is 10")
+
     flag.Parse()
     
+    threadsChan := make(chan struct{}, *tFlag)
 
     endpoints := generateEndpoints(paths)    
 
     countDataChan := make(chan struct{}, len(endpoints))
-
+    printDataChan := make(chan data) 
 
     if *gFlag{
         printArray(endpoints)
@@ -89,12 +105,36 @@ func main(){
     
 
     for _,url := range endpoints{
-        go func(){
-            fmt.Println(url)
+        go func(url string){
+            var content data
+            content.url = url
+
             defer func(){countDataChan <- struct{}{}}()
-        }()
+
+            threadsChan <- struct{}{}
+            resp, err  := http.Get(url)
+            <-threadsChan
+
+            content.statusCode = resp.StatusCode
+
+            if err != nil{    
+                content.statusCode =  waitForServer(url)  
+            }
+
+            printDataChan <- content
+
+        }(url)
     }
+    
+    go func(){
+        for {
+            content := <- printDataChan
+            printText(content.url, content.statusCode, *vFlag)
+        }
+    }()
+
     for range endpoints{
         <-countDataChan
     }
+    
 }
