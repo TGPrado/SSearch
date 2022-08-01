@@ -95,9 +95,10 @@ func main(){
 
     endpoints := generateEndpoints(paths)    
 
-    countDataChan := make(chan struct{}, len(endpoints))
+    cont := 1
+    max := len(endpoints)
     printDataChan := make(chan data) 
-
+    
     if *gFlag{
         printArray(endpoints)
         return
@@ -109,32 +110,29 @@ func main(){
             var content data
             content.url = url
 
-            defer func(){countDataChan <- struct{}{}}()
-
-            threadsChan <- struct{}{}
+            defer func(){printDataChan <- content}()
+            
+            threadsChan <- struct{}{} 
             resp, err  := http.Get(url)
             <-threadsChan
-
-            content.statusCode = resp.StatusCode
-
+        
+            if err == nil{
+                content.statusCode = resp.StatusCode
+            }
             if err != nil{    
                 content.statusCode =  waitForServer(url)  
             }
-
-            printDataChan <- content
-
         }(url)
     }
-    
-    go func(){
-        for {
-            content := <- printDataChan
-            printText(content.url, content.statusCode, *vFlag)
+    for {
+        select{
+            case content := <-printDataChan:
+                printText(content.url, content.statusCode, *vFlag)
+                cont += 1
+                if cont == max {
+                    return
+                }
         }
-    }()
+}
 
-    for range endpoints{
-        <-countDataChan
-    }
-    
 }
