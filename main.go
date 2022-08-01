@@ -83,6 +83,9 @@ func main(){
                       "/v2/openapi.json", 
                       "/v2/api/docs", 
                       "/v2/api/openapi.json", 
+                      "/swagger/index.html",
+                      "/swagger/docs.json",
+                      "/swagger/openapi.json",
                   }     
 
     gFlag := flag.Bool("g", false, "only generate swagger endpoints")
