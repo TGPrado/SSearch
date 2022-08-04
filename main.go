@@ -41,8 +41,8 @@ func printArray(array []string){
     }
 }
 
-func waitForServer(url string) int{
-    const timeout = 1 * time.Minute
+func waitForServer(url string, timeFlag int) int{
+    var timeout = time.Duration(timeFlag) * time.Minute
     deadline := time.Now().Add(timeout)
     for tries :=0; time.Now().Before(deadline); tries++{
         resp, err := http.Get(url)
@@ -71,23 +71,23 @@ func printText(url string, statusCode int, vFlag bool){
 
 
 func main(){
-    paths := []string{"/v1/api/docs", 
-                      "/v1/api/openapi.json", 
-                      "/v1/docs", 
-                      "/v1/openapi.json", 
-                      "/docs", 
-                      "/openapi.json", 
-                      "/api/docs", 
-                      "/api/openapi.json",
-                      "/v2/docs", 
-                      "/v2/openapi.json", 
-                      "/v2/api/docs", 
-                      "/v2/api/openapi.json", 
-                      "/swagger/index.html",
-                      "/swagger/docs.json",
-                      "/swagger/openapi.json",
+    paths := []string{"v1/api/docs", 
+                      "v1/api/openapi.json", 
+                      "v1/docs", 
+                      "v1/openapi.json", 
+                      "docs", 
+                      "openapi.json", 
+                      "api/docs", 
+                      "api/openapi.json",
+                      "v2/docs", 
+                      "v2/openapi.json", 
+                      "v2/api/docs", 
+                      "v2/api/openapi.json", 
+                      "swagger/index.html",
+                      "swagger/docs.json",
+                      "swagger/openapi.json",
                   }     
-
+    timeFlag := flag.Int("t", 60, "timeout in seconds default is 60")
     gFlag := flag.Bool("g", false, "only generate swagger endpoints")
     vFlag := flag.Bool("v", false, "print all status codes")
     tFlag := flag.Int("t", 10,     "number of threads, default is 10")
@@ -123,7 +123,7 @@ func main(){
                 content.statusCode = resp.StatusCode
             }
             if err != nil{    
-                content.statusCode =  waitForServer(url)  
+                content.statusCode =  waitForServer(url,*timeFlag)  
             }
         }(url)
     }
