@@ -87,7 +87,7 @@ func main(){
                       "swagger/docs.json",
                       "swagger/openapi.json",
                   }     
-    timeFlag := flag.Int("t", 60, "timeout in seconds default is 60")
+    timeFlag := flag.Int("tout", 60, "timeout in seconds default is 60")
     gFlag := flag.Bool("g", false, "only generate swagger endpoints")
     vFlag := flag.Bool("v", false, "print all status codes")
     tFlag := flag.Int("t", 10,     "number of threads, default is 10")
